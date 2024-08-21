@@ -27,3 +27,4 @@ codegen/
 # Simulink cache files
 *.slxc
 
+.DS_Store

@@ -97,9 +97,9 @@ legend('Location', 'best'); % Adjust legend location as per IEEE guidelines
 set(gcf, 'Color', 'w');
 ylim([0,0.5])
 
-% export_fig geogeo1_evaluation4.eps -m10
-% export_fig geogeo1_evaluation4.png -m10
-% savefig( fig , 'geogeo1_evaluation4.fig' )
+% export_fig geogeo1_ub_evaluation1.eps -m10
+% export_fig geogeo1_ub_evaluation1.png -m10
+% savefig( fig , 'geogeo1_ub_evaluation1.fig' )
 
 
 function comp_plot_conditionals(ax,fig,mylim,zlims)

@@ -119,6 +119,7 @@ set(gcf, 'Color', 'w');
 
 % export_fig geogeo1_predtime.eps -m10
 % export_fig geogeo1_predtime.png -m10
+% export_fig geogeo1_predtime.pdf -m10
 % savefig( fig , 'geogeo1_predtime.fig' )
 
 function result = calc_predtime(epsilon, mu, factor, K, Llims, Lres, zlims, qlims)

@@ -1,29 +1,50 @@
 close all;
 clear all;
 
-Llims = [1,3001];
-Lres = 30;
-zlims = [0,150];
+Llims = [1,1200]; % vehicle: 600, static: 1200
+Lres = 20; % vehicle 10, static: 20
+zlims = [0,1000];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% PART ONE
-K = 64;
-pr_stay = 0.2;
-[P, pim] = get_lazy_random_walk_line_P(pr_stay,K);
+%K = 64; % 64
+%pr_stay = 0.2; % 0.2
+%[P, pim] = get_lazy_random_walk_line_P(pr_stay,K);
+%check_P(P, pim)
+%conditionals = get_conditionals_linear_nbin(10,50,0.4,K);
+
+K = 15; % 64
+cqi_pr_stay = 0.90; % vehicle: 0.6 static: 0.9
+[P, pim] = get_lazy_random_walk_line_P(cqi_pr_stay,K);
 check_P(P, pim)
-conditionals = get_conditionals_linear_nbin(10,50,0.4,K);
+% Regression Model for Shape Parameter (k): k = 0.123 * CQI + 0.080
+% Regression Model for Scale Parameter (θ): θ = 0.835 * CQI + 5.813
+% alpha_k = 0.123;
+% beta_k = 0.080;
+% alpha_theta = 0.835;
+% beta_theta = 5.813;
+% conditionals = get_conditionals_gamma(alpha_k,beta_k,alpha_theta,beta_theta,K);
+
+% Regression Model for r Parameter (r): r = 0.105 * CQI + 0.104
+% Regression Model for p Parameter (p): p = -0.006 * CQI + 0.135
+alpha_r = 0.105;
+beta_r = 0.104;
+alpha_p = -0.006;
+beta_p = 0.136;
+conditionals = get_conditionals_nbin(alpha_r,beta_r,alpha_p,beta_p,K);
 
 % conds and marginals figure and its axes
 fig = figure;
 ax = axes(fig);
 mylim = plot_conditionals(ax, conditionals,zlims);
-plot_forecast_dist(ax, P, 60, 1, conditionals, zlims);
+plot_forecast_dist(ax, P, 60, 15, conditionals, zlims);
 plot_marginal_dist(ax, pim, conditionals, zlims);
 comp_plot_conditionals(ax,fig,mylim);
 
 
-% export_fig randomwalk_validation.eps -m10
-% export_fig randomwalk_validation.png -m10
-% savefig( fig , 'randomwalk_validation.fig' )
+% export_fig randomwalk_validation_lte.eps -m10
+% export_fig randomwalk_validation_lte.png -m10
+% export_fig randomwalk_validation_lte.pdf -m10
+% savefig( fig , 'randomwalk_validation_lte.fig' )
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%% PART TWO
@@ -34,12 +55,12 @@ ax = axes(fig);
 
 % colors: #3b00ff blue and #ed0105 red
 
-x = K/64;
+x = K/15;
 calc_and_plot_exact(x, P, pim, conditionals, Llims, Lres, zlims, ax, "#545454", "-", "o", 1, 8);
 calc_and_plot_upperbound1(x, P, pim, conditionals, Llims, Lres, zlims, ax, "#174aa8", "--", "o", 1, 8);
 calc_and_plot_upperbound2(x, P, pim, conditionals, Llims, Lres, zlims, ax, "#e63538", ":", "o", 1, 8);
 
-x = K/2;
+x = K/5;
 calc_and_plot_exact(x, P, pim, conditionals, Llims, Lres, zlims, ax, "#545454", "-", "^", 4, 8);
 calc_and_plot_upperbound1(x, P, pim, conditionals, Llims, Lres, zlims, ax, "#174aa8", "--", "^", 4, 8);
 calc_and_plot_upperbound2(x, P, pim, conditionals, Llims, Lres, zlims, ax, "#e63538", ":", "^", 4, 8);
@@ -51,9 +72,16 @@ calc_and_plot_upperbound2(x, P, pim, conditionals, Llims, Lres, zlims, ax, "#e63
 
 comp_plot_results(ax,fig,Llims);
 
-% export_fig randomwalk_upperbounds.eps -m10
-% export_fig randomwalk_upperbounds.png -m10
-% savefig( fig , 'randomwalk_upperbounds.fig' )
+% export_fig randomwalk_upperbounds_lte_vehicle.eps -m10
+% export_fig randomwalk_upperbounds_lte_vehicle.png -m10
+% export_fig randomwalk_upperbounds_lte_vehicle.pdf -m10
+% savefig( fig , 'randomwalk_upperbounds_lte_vehicle.fig' )
+
+% export_fig randomwalk_upperbounds_lte_static.eps -m10
+% export_fig randomwalk_upperbounds_lte_static.png -m10
+% export_fig randomwalk_upperbounds_lte_static.pdf -m10
+% savefig( fig , 'randomwalk_upperbounds_lte_static.fig' )
+
 
 function comp_plot_results(ax,fig,Llims)
     ylabel(ax, 'Predictability');
@@ -82,7 +110,7 @@ end
 
 function comp_plot_conditionals(ax,fig,mylim)
     ylabel(ax, 'Probability');
-    xlabel(ax, 'Z');
+    xlabel(ax, 'Z [Throughput (Mbps)]');
     font = 'Times New Roman';
     set(fig,'defaultAxesFontName',font);
     set(fig,'DefaultTextFontName', font, 'DefaultAxesFontName', font);
@@ -95,7 +123,7 @@ function comp_plot_conditionals(ax,fig,mylim)
     set(ax, 'FontSize', 12); % Adjust font sizes as per IEEE guidelines
     set(ax, 'XGrid', 'on', 'YGrid', 'on');
     set(ax, 'YLim', [0, mylim]);
-    set(ax, 'XLim', [0, 100]);
+    set(ax, 'XLim', [0, 60]);
     lgd = legend(ax, 'Interpreter', 'latex', 'FontSize', 12);
     set(lgd, 'Location', 'best');
     set(fig, 'Color', 'w');
@@ -108,32 +136,56 @@ end
 function mylim = plot_conditionals(ax_cond, conditionals, zlims)
     
     legend_entry_added = false;
-    HOP = 8;
+    HOP = 3;
+    
+    % Define marker styles
+    markers = {'o', 's', '^', 'd', 'x', '+', '*', 'p', 'h'}; % Add more if needed
+    num_markers = length(markers); % Total number of unique markers
+    marker_idx = 1; % Initialize marker index
+    marker_size = 10; % Set marker size
+    offset =1;
+    hop = 5;
+    
     % print conditionals
     K = length(conditionals);
     max_probs = [];
     for yp=[0:HOP:K]
+        if yp == 6 || yp == 9
+           continue; 
+        end
         if yp == 0
             y = 1;
         else
             y = yp;
         end
+        
+        % Extract probability values and z-values
         probs = [];
-        for z=[zlims(1):zlims(2)]
+        z_values = [];
+        for z = [zlims(1):zlims(2)]
             probs = [probs, conditionals{y}(z)];
+            z_values = [z_values, z];
         end
+        
         if sum(probs) < 0.99
            error('fix zlim for conditionals');
         end
         set(ax_cond, 'NextPlot', 'add');
-        if ~legend_entry_added
-            p = plot(ax_cond, [zlims(1):zlims(2)],probs, '--', 'LineWidth', 1, 'DisplayName', 'Analysis distributions');
-            legend_entry_added = true;
-        else
-            p = plot(ax_cond, [zlims(1):zlims(2)],probs, '--', 'LineWidth', 1, 'HandleVisibility','off');
-        end
-        p.Color = "#545454";
-        p.LineStyle = "--";
+        
+        % Select a marker style (cycling through the list)
+        marker_style = markers{mod(marker_idx - 1, num_markers) + 1};
+    
+        % Compute marker indices based on offset and hop
+        marker_indices = offset:hop:length(z_values);
+
+        % Plot the full curve
+        p = plot(ax_cond, z_values, probs, '--', 'LineWidth', 1, ...
+                 'DisplayName', sprintf('Posterior distribution for x=%d', y), ...
+                 'Color', "#545454", 'Marker', marker_style, ...
+                 'MarkerSize', marker_size, 'MarkerIndices', marker_indices);
+        
+        % Move to the next marker
+        marker_idx = marker_idx + 1;
         
         max_probs = [max_probs, max(probs)];
     end
@@ -158,12 +210,13 @@ function mylim = plot_conditionals(ax_cond, conditionals, zlims)
         end
         i = i+1;
         % Add text on top of each plot
-        x_position = exp_vals(y) - 1.5;  % Middle of the x-axis range
-        y_position = max_probs(i) * 1.05;          % Slightly above the maximum y value
-        text(ax_cond, x_position, y_position, sprintf('x=%d', y), 'HorizontalAlignment', 'center', 'FontName', 'Times New Roman', 'FontSize', 12);
+        %x_position = exp_vals(y) - 1.5;  % Middle of the x-axis range
+        %y_position = max_probs(i) * 1.05;          % Slightly above the maximum y value
+        %text(ax_cond, x_position, y_position, sprintf('x=%d', y), 'HorizontalAlignment', 'center', 'FontName', 'Times New Roman', 'FontSize', 12);
     end
     
-    mylim = max_probs(1) * 1.1; 
+    %mylim = max_probs(1) * 1.1; 
+    mylim = 0.08;
     
     legend(ax_cond, 'show');
 end
@@ -211,12 +264,26 @@ function check_P(P, pim)
 
 end
 
-function conditionals = get_conditionals_linear_nbin(r1, r2, p, K)
+function conditionals = get_conditionals_nbin(alpha_r,beta_r,alpha_p,beta_p,K)
+
     % conditionals
     conditionals = cell(K,1);
     for y=[1:K]
-        r = r1 + (y-1)*(r2-r1)/K;
+        r = alpha_r*y + beta_r;
+        p = alpha_p*y + beta_p;
         conditionals{y} = @(z) nbinpdf(z,r,p);
+    end
+end
+
+function conditionals = get_conditionals_gamma(alpha_k,beta_k,alpha_theta,beta_theta,K)
+    % conditionals
+    % Regression Model for Shape Parameter (k): k = 0.123 * CQI + 0.080
+    % Regression Model for Scale Parameter (θ): θ = 0.835 * CQI + 5.813
+    conditionals = cell(K,1);
+    for y=[1:K]
+        k = alpha_k*y + beta_k;
+        theta = alpha_theta*y + beta_theta;
+        conditionals{y} = @(z) gampdf(z, k, theta);
     end
 end
 

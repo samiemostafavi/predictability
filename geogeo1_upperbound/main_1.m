@@ -150,7 +150,7 @@ function mylim = plot_conditionals(ax_cond, conditionals, zlims, yplims, ypres)
         end
         set(ax_cond, 'NextPlot', 'add');
         if ~legend_entry_added
-            p = plot(ax_cond, [zlims(1):zlims(2)],probs, '--', 'LineWidth', 1, 'DisplayName', 'Analysis distributions');
+            p = plot(ax_cond, [zlims(1):zlims(2)],probs, '--', 'LineWidth', 1, 'DisplayName', 'Posterior distributions');
             legend_entry_added = true;
         else
             p = plot(ax_cond, [zlims(1):zlims(2)],probs, '--', 'LineWidth', 1, 'HandleVisibility','off');
@@ -203,7 +203,7 @@ function plot_marginal_dist(ax, pim, conditionals, zlims)
         end
         probs = [probs, prob];
     end
-    p = plot(ax,[zlims(1):zlims(2)],probs, '-', 'LineWidth', 2.5, 'DisplayName', 'Marginal distribution');
+    p = plot(ax,[zlims(1):zlims(2)],probs, '-', 'LineWidth', 2.5, 'DisplayName', 'Prior distribution');
     p.Color = "#545454";
     p.LineStyle = "-";
 end
